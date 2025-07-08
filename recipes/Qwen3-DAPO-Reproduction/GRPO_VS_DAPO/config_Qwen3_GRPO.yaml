@@ -1,0 +1,112 @@
+# Model arguments
+
+# 模型基本信息
+model_name_or_path: /root/group-shared/models/base_models/Qwen3-0.6B
+model_revision: main
+torch_dtype: bfloat16
+attn_implementation: flash_attention_2
+
+
+# Data training arguments
+
+# 数据与模板配置
+# We edit the DeepSeek chat template to ensure (a) the reasoning block within <think> and </think> is included in the completion and (b) the <think> tag is not part of the prefill so that the format reward works
+chat_template: "{% if not add_generation_prompt is defined %}{% set add_generation_prompt = false %}{% endif %}{% set ns = namespace(is_first=false, is_tool=false, is_output_first=true, system_prompt='') %}{%- for message in messages %}{%- if message['role'] == 'system' %}{% set ns.system_prompt = message['content'] %}{%- endif %}{%- endfor %}{{bos_token}}{{ns.system_prompt}}{%- for message in messages %}{%- if message['role'] == 'user' %}{%- set ns.is_tool = false -%}{{'<｜User｜>' + message['content']}}{%- endif %}{%- if message['role'] == 'assistant' and message['content'] is none %}{%- set ns.is_tool = false -%}{%- for tool in message['tool_calls']%}{%- if not ns.is_first %}{{'<｜Assistant｜><｜tool▁calls▁begin｜><｜tool▁call▁begin｜>' + tool['type'] + '<｜tool▁sep｜>' + tool['function']['name'] + '\\n' + '```json' + '\\n' + tool['function']['arguments'] + '\\n' + '```' + '<｜tool▁call▁end｜>'}}{%- set ns.is_first = true -%}{%- else %}{{'\\n' + '<｜tool▁call▁begin｜>' + tool['type'] + '<｜tool▁sep｜>' + tool['function']['name'] + '\\n' + '```json' + '\\n' + tool['function']['arguments'] + '\\n' + '```' + '<｜tool▁call▁end｜>'}}{{'<｜tool▁calls▁end｜><｜end▁of▁sentence｜>'}}{%- endif %}{%- endfor %}{%- endif %}{%- if message['role'] == 'assistant' and message['content'] is not none %}{%- if ns.is_tool %}{{'<｜tool▁outputs▁end｜>' + message['content'] + '<｜end▁of▁sentence｜>'}}{%- set ns.is_tool = false -%}{%- else %}{% set content = message['content'] %}{{'<｜Assistant｜>' + content + '<｜end▁of▁sentence｜>'}}{%- endif %}{%- endif %}{%- if message['role'] == 'tool' %}{%- set ns.is_tool = true -%}{%- if ns.is_output_first %}{{'<｜tool▁outputs▁begin｜><｜tool▁output▁begin｜>' + message['content'] + '<｜tool▁output▁end｜>'}}{%- set ns.is_output_first = false %}{%- else %}{{'\\n<｜tool▁output▁begin｜>' + message['content'] + '<｜tool▁output▁end｜>'}}{%- endif %}{%- endif %}{%- endfor -%}{% if ns.is_tool %}{{'<｜tool▁outputs▁end｜>'}}{% endif %}{% if add_generation_prompt and not ns.is_tool %}{{'<｜Assistant｜>'}}{% endif %}"
+# load dataset from HuggingFace or local path
+# dataset_name: open-r1/OpenR1-Math-220k
+dataset_name: /root/group-shared/datasets/base_datasets/open-r1/OpenR1-Math-220k
+dataset_prompt_column: problem
+system_prompt: "You are a helpful AI Assistant that provides well-reasoned and detailed responses. You first think about the reasoning process as an internal monologue and then provide the user with the answer. Respond in the following format: <think>\n...\n</think>\n<answer>\n...\n</answer>"
+
+
+# DAPO trainer config
+
+# 计算与资源配置
+bf16: true
+use_vllm: true
+gradient_checkpointing: true
+gradient_checkpointing_kwargs:
+  use_reentrant: false
+use_liger_kernel: true
+
+# # DAPO 实现关键配置
+# beta: 0.0
+# epsilon: 0.2
+# epsilon_high: 0.28
+# loss_type: "bnpo"
+# mask_truncated_completions: true
+
+# 训练规模与批次 
+# todo：与显存占用相关，需要重点微调的超参数
+max_prompt_length: 512
+max_completion_length: 2048
+gradient_accumulation_steps: 8
+num_generations: 4
+num_train_epochs: 1
+per_device_train_batch_size: 4
+per_device_eval_batch_size: 16
+
+
+# Optimizer & Learning Rate 
+# todo：需要重点微调的超参数
+
+# 学习率策略
+learning_rate: 1.0e-06
+lr_scheduler_type: cosine_with_min_lr
+lr_scheduler_kwargs:
+  min_lr_rate: 0.1
+warmup_ratio: 0.1
+
+# 其他训练参数
+temperature: 0.7
+
+
+# Logging & Output
+log_completions: true
+log_level: info
+logging_first_step: true
+logging_steps: 1
+logging_strategy: steps
+output_dir: /root/group-shared/qwen-dapo-train/Qwen3-0.6B-GRPO
+overwrite_output_dir: true
+report_to:
+- tensorboard
+# - wandb
+
+
+# Saving model
+save_strategy: "steps"
+# save_strategy: "epoch"
+save_steps: 10  
+save_total_limit: 3
+
+
+# Evaluation & Reward functions
+do_eval: false
+reward_funcs:
+- accuracy
+- format
+- tag_count
+# - soft_overlong_punishment # DAPO 实现关键配置
+reward_weights:
+- 1.0
+- 1.0
+- 1.0
+# - 1.0
+
+
+# VLLM config
+# vllm_max_model_len: 1024
+# vllm_max_num_seqs: 1
+# vllm_cpu_offloading: true
+
+
+# Push to Hugging Face Hub
+push_to_hub: false
+# hub_model_id: Qwen3-0.6B-DAPO
+# hub_strategy: every_save
+
+
+# Other config
+max_steps: -1
+seed: 42
