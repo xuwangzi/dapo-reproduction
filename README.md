@@ -29,6 +29,8 @@
 
 Deepspeed 配置：`recipes/accelerate_configs/zero3.yaml` 
 
+本地下载脚本：`scripts/hf_download.py` huggingface
+
 ### Removing KL Divergence
 
 #### 对应公式
@@ -205,6 +207,10 @@ reward_funcs:
 ```
 
 ### Dynamic Sampling
+
+#### 实现细节
+
+todo
 
 #### 对应公式
 
