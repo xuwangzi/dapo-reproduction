@@ -33,7 +33,7 @@ use_liger_kernel: true
 # beta: 0.0
 # epsilon: 0.2
 # epsilon_high: 0.28
-# loss_type: "bnpo"
+loss_type: "grpo"
 # mask_truncated_completions: true
 
 # 训练规模与批次 

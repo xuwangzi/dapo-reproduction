@@ -240,15 +240,15 @@ VRAM：81251MiB * 2
 
 #### Qwen2.5 V.S. Qwen3
 
-todo
+![image-20250708201716326](README.assets/image-20250708201716326.png) 
+
+![image-20250708201703552](README.assets/image-20250708201703552.png) 
 
 #### GRPO V.S. DAPO
 
-todo
+![image-20250708202833399](README.assets/image-20250708202833399.png)
 
-#### DAPO Reproduction
-
-todo
+<img src="README.assets/image-20250708202843681.png" alt="image-20250708202843681" style="zoom:50%;" /> 
 
 ## 参考资料
 

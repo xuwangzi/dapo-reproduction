@@ -18,19 +18,19 @@ from datasets import load_dataset
 # 设置镜像环境变量
 os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
 
-# 下载模型和分词器到本地
-save_dir = "/root/group-shared/models/base_models"
-model_name = "Qwen/Qwen3-0.6B"
+# # 下载模型和分词器到本地
+# save_dir = "/root/group-shared/models/base_models"
+# model_name = "Qwen/Qwen3-0.6B"
 
-model = AutoModelForCausalLM.from_pretrained(model_name)
-tokenizer = AutoTokenizer.from_pretrained(model_name)
+# model = AutoModelForCausalLM.from_pretrained(model_name)
+# tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-model.save_pretrained(f"{save_dir}/{model_name}")
-tokenizer.save_pretrained(f"{save_dir}/{model_name}")
+# model.save_pretrained(f"{save_dir}/{model_name}")
+# tokenizer.save_pretrained(f"{save_dir}/{model_name}")
 
 # 下载数据集到本地缓存
 save_dir = "/root/group-shared/datasets/base_datasets"
-dataset_name = 'open-r1/OpenR1-Math-220k'
+dataset_name = 'BytedTsinghua-SIA/DAPO-Math-17k'
 
 dataset = load_dataset(dataset_name)
 dataset.save_to_disk(f"{save_dir}/{dataset_name}")
