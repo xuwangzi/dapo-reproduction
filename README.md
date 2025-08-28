@@ -21,6 +21,18 @@
 | soft_overlong_punishment<br />(& overlong_filtering) | ❌    | ✅    |
 | dynamic sample                                       | ❌    | ✅    |
 
+DAPO 的 Table 1 展示了在 DeepSeek-R1-Zero-Qwen-32B 基础上逐步应用 DAPO 各项技术的效果：
+
+| 模型/技术 | AIME24_avg@32 |
+|----------|---------------|
+| **DeepSeek-R1-Zero-Qwen-32B** | **47** |
+| Naive GRPO | 30 |
+| + Overlong Filtering | 36 |
+| + Clip-Higher | 38 |
+| + Soft Overlong Punishment | 41 |
+| + Token-level Loss | 42 |
+| **+ Dynamic Sampling (DAPO)** | **50** |
+
 ## DAPO 算法实现
 
 代码实现目录：
@@ -124,12 +136,24 @@ loss_type: str = field(
 )
 ```
 
+**DAPO 原始公式 (token级规范化):**
+
+$$\mathcal{J}_{\text{DAPO}}(\theta) = \mathbb{E}_{(q,a)\sim\mathcal{D}, \{o_i\}_{i=1}^G \sim \pi_{\theta_{\text{old}}}(\cdot|q)} \left[ \frac{1}{\sum_{i=1}^G |o_i|} \sum_{i=1}^G \sum_{t=1}^{|o_i|} \min \left( r_{i,t}(\theta) \hat{A}_{i,t}, \text{clip}(r_{i,t}(\theta), 1-\varepsilon_{\text{low}}, 1+\varepsilon_{\text{high}}) \hat{A}_{i,t} \right) \right]$$
+
+**BNPO/GRPO 实际实现 (序列级规范化):**
+
+$$\mathcal{J}_{\text{BNPO}}(\theta) = \mathbb{E}_{(q,a)\sim\mathcal{D}, \{o_i\}_{i=1}^G \sim \pi_{\theta_{\text{old}}}(\cdot|q)} \left[ \frac{1}{G} \sum_{i=1}^G \frac{1}{|o_i|} \sum_{t=1}^{|o_i|} \min \left( r_{i,t}(\theta) \hat{A}_{i,t}, \text{clip}(r_{i,t}(\theta), 1-\varepsilon_{\text{low}}, 1+\varepsilon_{\text{high}}) \hat{A}_{i,t} \right) \right]$$
+
+**核心差异:**
+- DAPO: 分母为 $\sum_{i=1}^G |o_i|$ (batch中所有token总数)，token级权重相等
+- BNPO/GRPO: 分母为 $G$ (batch中序列个数)，每个序列内部按长度平均，序列间权重相等
+
 #### 实现细节
 
 在 ``recipes/config_Qwen3_DAPO.yaml`` 中，直接使用 ``trl/trainer/grpo_config.py`` 的 ``loss_type`` 
 
 ```yaml
-# DAPO 实现关键配置
+# 此处 bnpo 实际上依旧遵循 GRPO 的 loss 实现
 loss_type: "bnpo"
 ```
 
@@ -208,13 +232,13 @@ reward_funcs:
 
 ### Dynamic Sampling
 
-#### 实现细节
-
-todo
-
 #### 对应公式
 
 <img src="README.assets/image-20250707213811564.png" alt="image-20250707213811564" style="zoom:50%;" /> 
+
+#### 实现细节
+
+todo
 
 ## DAPO 实验
 
@@ -248,7 +272,7 @@ VRAM：81251MiB * 2
 
 ![image-20250708202833399](README.assets/image-20250708202833399.png)
 
-<img src="README.assets/image-20250708202843681.png" alt="image-20250708202843681" style="zoom:50%;" /> 
+<img src="README.assets/image-20250708202843681.png" alt="image-20250708202843681" style="zoom:50%;" />
 
 ## 参考资料
 
